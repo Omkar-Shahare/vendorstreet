@@ -65,8 +65,11 @@ export function Navigation() {
 
           {/* Desktop Right Side */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-4 w-4" />
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                2
+              </span>
             </Button>
 
             <Button variant="ghost" onClick={toggleLanguage} className="flex items-center">
@@ -100,6 +103,16 @@ export function Navigation() {
       {mobileMenuOpen && (
         <div className="md:hidden bg-white border-t">
           <div className="px-4 py-2 space-y-1">
+            <div className="flex items-center px-3 py-2">
+              <Button variant="ghost" size="icon" className="relative mr-2">
+                <Bell className="h-5 w-5" />
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                  2
+                </span>
+              </Button>
+              <span className="text-sm text-gray-600">Notifications</span>
+            </div>
+            
             {navItems.map((item) => (
               <Link
                 key={item.href}

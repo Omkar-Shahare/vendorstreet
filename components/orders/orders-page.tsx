@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Navigation } from "@/components/navigation"
 import { useLanguage } from "@/hooks/use-language"
+import { useAuth } from "@/hooks/use-auth"
 import { Package, Truck, CheckCircle, Clock, MapPin, Phone } from "lucide-react"
 
 interface Order {
@@ -24,74 +25,70 @@ interface Order {
 
 export function OrdersPage() {
   const { t } = useLanguage()
+  const { profile } = useAuth()
   const [orders, setOrders] = useState<Order[]>([])
 
   useEffect(() => {
-    // Demo data
-    const demoOrders: Order[] = [
-      {
-        id: "ORD-001",
-        supplier: "Fresh Vegetables Co.",
-        items: [
-          { name: "Onions", quantity: "10 kg", price: 200 },
-          { name: "Tomatoes", quantity: "5 kg", price: 150 },
-          { name: "Potatoes", quantity: "8 kg", price: 160 },
-        ],
-        totalAmount: 510,
-        status: "delivered",
-        orderDate: "2024-01-15",
-        deliveryDate: "2024-01-17",
-        trackingId: "TRK123456",
-        supplierContact: "+91 98765 43210",
-        deliveryAddress: "Shop 15, Street Food Market, Andheri West, Mumbai",
-      },
-      {
-        id: "ORD-002",
-        supplier: "Spice Masters",
-        items: [
-          { name: "Turmeric Powder", quantity: "2 kg", price: 180 },
-          { name: "Red Chili Powder", quantity: "1 kg", price: 120 },
-          { name: "Coriander Powder", quantity: "1.5 kg", price: 90 },
-        ],
-        totalAmount: 390,
-        status: "in-transit",
-        orderDate: "2024-01-18",
-        deliveryDate: "2024-01-20",
-        trackingId: "TRK789012",
-        supplierContact: "+91 87654 32109",
-        deliveryAddress: "Shop 15, Street Food Market, Andheri West, Mumbai",
-      },
-      {
-        id: "ORD-003",
-        supplier: "Oil & More",
-        items: [
-          { name: "Sunflower Oil", quantity: "5 L", price: 450 },
-          { name: "Mustard Oil", quantity: "2 L", price: 280 },
-        ],
-        totalAmount: 730,
-        status: "confirmed",
-        orderDate: "2024-01-20",
-        deliveryDate: "2024-01-22",
-        trackingId: "TRK345678",
-        supplierContact: "+91 76543 21098",
-        deliveryAddress: "Shop 15, Street Food Market, Andheri West, Mumbai",
-      },
-      {
-        id: "ORD-004",
-        supplier: "Grain Suppliers Ltd.",
-        items: [
-          { name: "Basmati Rice", quantity: "25 kg", price: 1250 },
-          { name: "Toor Dal", quantity: "5 kg", price: 400 },
-        ],
-        totalAmount: 1650,
-        status: "pending",
-        orderDate: "2024-01-21",
-        supplierContact: "+91 65432 10987",
-        deliveryAddress: "Shop 15, Street Food Market, Andheri West, Mumbai",
-      },
-    ]
+    // Load orders from localStorage (simulating API)
+    const loadOrders = () => {
+      const savedOrders = localStorage.getItem('vendorconnect-orders')
+      if (savedOrders) {
+        setOrders(JSON.parse(savedOrders))
+      } else {
+        // Demo data for first time users
+        const demoOrders: Order[] = [
+          {
+            id: "ORD-001",
+            supplier: "Fresh Vegetables Co.",
+            items: [
+              { name: "Onions", quantity: "10 kg", price: 200 },
+              { name: "Tomatoes", quantity: "5 kg", price: 150 },
+              { name: "Potatoes", quantity: "8 kg", price: 160 },
+            ],
+            totalAmount: 510,
+            status: "delivered",
+            orderDate: "2024-01-15",
+            deliveryDate: "2024-01-17",
+            trackingId: "TRK123456",
+            supplierContact: "+91 98765 43210",
+            deliveryAddress: `${profile?.businessName || 'Shop'}, ${profile?.location || 'Mumbai'}`,
+          },
+          {
+            id: "ORD-002",
+            supplier: "Spice Masters",
+            items: [
+              { name: "Turmeric Powder", quantity: "2 kg", price: 180 },
+              { name: "Red Chili Powder", quantity: "1 kg", price: 120 },
+              { name: "Coriander Powder", quantity: "1.5 kg", price: 90 },
+            ],
+            totalAmount: 390,
+            status: "in-transit",
+            orderDate: "2024-01-18",
+            deliveryDate: "2024-01-20",
+            trackingId: "TRK789012",
+            supplierContact: "+91 87654 32109",
+            deliveryAddress: `${profile?.businessName || 'Shop'}, ${profile?.location || 'Mumbai'}`,
+          },
+        ]
+        setOrders(demoOrders)
+        localStorage.setItem('vendorconnect-orders', JSON.stringify(demoOrders))
+      }
+    }
 
-    setOrders(demoOrders)
+    loadOrders()
+    
+    // Listen for new orders from marketplace
+    const handleNewOrder = (event: CustomEvent) => {
+      const newOrder = event.detail
+      setOrders(prev => {
+        const updated = [newOrder, ...prev]
+        localStorage.setItem('vendorconnect-orders', JSON.stringify(updated))
+        return updated
+      })
+    }
+    
+    window.addEventListener('newOrder', handleNewOrder as EventListener)
+    return () => window.removeEventListener('newOrder', handleNewOrder as EventListener)
   }, [])
 
   const getStatusIcon = (status: string) => {
@@ -129,6 +126,23 @@ export function OrdersPage() {
   const activeOrders = orders.filter((order) => ["pending", "confirmed", "in-transit"].includes(order.status))
   const completedOrders = orders.filter((order) => ["delivered", "cancelled"].includes(order.status))
 
+  const handleReorder = (order: Order) => {
+    // In a real app, this would create a new order with the same items
+    const newOrder: Order = {
+      ...order,
+      id: `ORD-${Date.now()}`,
+      status: "pending",
+      orderDate: new Date().toISOString().split('T')[0],
+      deliveryDate: undefined,
+      trackingId: undefined
+    }
+    
+    setOrders(prev => {
+      const updated = [newOrder, ...prev]
+      localStorage.setItem('vendorconnect-orders', JSON.stringify(updated))
+      return updated
+    })
+  }
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
@@ -291,7 +305,7 @@ export function OrdersPage() {
                   </div>
 
                   <div className="flex justify-end space-x-2 pt-4 border-t">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => handleReorder(order)}>
                       {t("reorder")}
                     </Button>
                     <Button size="sm">{t("rate_supplier")}</Button>

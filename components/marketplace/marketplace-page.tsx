@@ -8,7 +8,19 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Navigation } from "@/components/navigation"
 import { useLanguage } from "@/hooks/use-language"
+import { ProductDetailsModal } from "./product-details-modal"
+import { useToast } from "@/hooks/use-toast"
 import { Search, Star, MapPin, ShoppingCart } from "lucide-react"
+
+interface Product {
+  id: string
+  name: string
+  price: number
+  unit: string
+  description: string
+  stock: number
+  category: string
+}
 
 interface Supplier {
   id: string
@@ -16,19 +28,23 @@ interface Supplier {
   rating: number
   location: string
   category: string
-  products: string[]
+  products: Product[]
   priceRange: string
   verified: boolean
   image: string
+  phone: string
 }
 
 export function MarketplacePage() {
   const { t } = useLanguage()
+  const { toast } = useToast()
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [filteredSuppliers, setFilteredSuppliers] = useState<Supplier[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [locationFilter, setLocationFilter] = useState("all")
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
     // Demo data
@@ -39,10 +55,16 @@ export function MarketplacePage() {
         rating: 4.8,
         location: "Mumbai, Maharashtra",
         category: "vegetables",
-        products: ["Onions", "Tomatoes", "Potatoes", "Carrots"],
+        products: [
+          { id: "1", name: "Fresh Onions", price: 25, unit: "kg", description: "Premium quality red onions", stock: 500, category: "vegetables" },
+          { id: "2", name: "Tomatoes", price: 30, unit: "kg", description: "Fresh ripe tomatoes", stock: 300, category: "vegetables" },
+          { id: "3", name: "Potatoes", price: 20, unit: "kg", description: "High quality potatoes", stock: 400, category: "vegetables" },
+          { id: "4", name: "Carrots", price: 35, unit: "kg", description: "Fresh carrots", stock: 200, category: "vegetables" }
+        ],
         priceRange: "₹20-50/kg",
         verified: true,
         image: "/placeholder.svg?height=200&width=300",
+        phone: "+91 98765 43210",
       },
       {
         id: "2",
@@ -50,10 +72,16 @@ export function MarketplacePage() {
         rating: 4.6,
         location: "Delhi, NCR",
         category: "spices",
-        products: ["Turmeric", "Red Chili", "Coriander", "Cumin"],
+        products: [
+          { id: "5", name: "Turmeric Powder", price: 180, unit: "kg", description: "Pure turmeric powder", stock: 50, category: "spices" },
+          { id: "6", name: "Red Chili Powder", price: 200, unit: "kg", description: "Hot red chili powder", stock: 40, category: "spices" },
+          { id: "7", name: "Coriander Powder", price: 150, unit: "kg", description: "Fresh coriander powder", stock: 60, category: "spices" },
+          { id: "8", name: "Cumin Seeds", price: 300, unit: "kg", description: "Premium cumin seeds", stock: 30, category: "spices" }
+        ],
         priceRange: "₹100-300/kg",
         verified: true,
         image: "/placeholder.svg?height=200&width=300",
+        phone: "+91 87654 32109",
       },
       {
         id: "3",
@@ -61,10 +89,15 @@ export function MarketplacePage() {
         rating: 4.5,
         location: "Pune, Maharashtra",
         category: "oils",
-        products: ["Sunflower Oil", "Mustard Oil", "Coconut Oil"],
+        products: [
+          { id: "9", name: "Sunflower Oil", price: 120, unit: "L", description: "Pure sunflower oil", stock: 100, category: "oils" },
+          { id: "10", name: "Mustard Oil", price: 140, unit: "L", description: "Cold pressed mustard oil", stock: 80, category: "oils" },
+          { id: "11", name: "Coconut Oil", price: 200, unit: "L", description: "Virgin coconut oil", stock: 60, category: "oils" }
+        ],
         priceRange: "₹80-150/L",
         verified: true,
         image: "/placeholder.svg?height=200&width=300",
+        phone: "+91 76543 21098",
       },
       {
         id: "4",
@@ -72,10 +105,16 @@ export function MarketplacePage() {
         rating: 4.7,
         location: "Bangalore, Karnataka",
         category: "grains",
-        products: ["Rice", "Wheat", "Dal", "Quinoa"],
+        products: [
+          { id: "12", name: "Basmati Rice", price: 80, unit: "kg", description: "Premium basmati rice", stock: 200, category: "grains" },
+          { id: "13", name: "Wheat Flour", price: 40, unit: "kg", description: "Fresh wheat flour", stock: 300, category: "grains" },
+          { id: "14", name: "Toor Dal", price: 120, unit: "kg", description: "High quality toor dal", stock: 150, category: "grains" },
+          { id: "15", name: "Quinoa", price: 400, unit: "kg", description: "Organic quinoa", stock: 50, category: "grains" }
+        ],
         priceRange: "₹30-80/kg",
         verified: true,
         image: "/placeholder.svg?height=200&width=300",
+        phone: "+91 65432 10987",
       },
       {
         id: "5",
@@ -83,10 +122,16 @@ export function MarketplacePage() {
         rating: 4.4,
         location: "Chennai, Tamil Nadu",
         category: "dairy",
-        products: ["Milk", "Paneer", "Butter", "Yogurt"],
+        products: [
+          { id: "16", name: "Fresh Milk", price: 50, unit: "L", description: "Fresh cow milk", stock: 100, category: "dairy" },
+          { id: "17", name: "Paneer", price: 300, unit: "kg", description: "Fresh paneer", stock: 50, category: "dairy" },
+          { id: "18", name: "Butter", price: 400, unit: "kg", description: "Pure butter", stock: 30, category: "dairy" },
+          { id: "19", name: "Yogurt", price: 60, unit: "kg", description: "Fresh yogurt", stock: 80, category: "dairy" }
+        ],
         priceRange: "₹40-200/unit",
         verified: false,
         image: "/placeholder.svg?height=200&width=300",
+        phone: "+91 54321 09876",
       },
     ]
 
@@ -101,7 +146,7 @@ export function MarketplacePage() {
       filtered = filtered.filter(
         (supplier) =>
           supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          supplier.products.some((product) => product.toLowerCase().includes(searchTerm.toLowerCase())),
+          supplier.products.some((product) => product.name.toLowerCase().includes(searchTerm.toLowerCase())),
       )
     }
 
@@ -115,6 +160,27 @@ export function MarketplacePage() {
 
     setFilteredSuppliers(filtered)
   }, [searchTerm, categoryFilter, locationFilter, suppliers])
+
+  const handleViewProducts = (supplier: Supplier) => {
+    setSelectedSupplier(supplier)
+    setIsModalOpen(true)
+  }
+
+  const handleOrder = async (supplierId: string, items: { productId: string; quantity: number; price: number }[]) => {
+    // In a real app, this would make an API call to create the order
+    console.log('Creating order:', { supplierId, items })
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    toast({
+      title: "Order Placed Successfully!",
+      description: `Your order has been placed and will be processed soon.`,
+    })
+    
+    // In a real app, this would update the orders in the backend
+    // and the orders page would fetch the updated data
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -205,7 +271,7 @@ export function MarketplacePage() {
                     <div className="flex flex-wrap gap-1">
                       {supplier.products.slice(0, 3).map((product, index) => (
                         <Badge key={index} variant="secondary" className="text-xs">
-                          {product}
+                          {product.name}
                         </Badge>
                       ))}
                       {supplier.products.length > 3 && (
@@ -218,7 +284,7 @@ export function MarketplacePage() {
 
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-green-600">{supplier.priceRange}</span>
-                    <Button size="sm">
+                    <Button size="sm" onClick={() => handleViewProducts(supplier)}>
                       <ShoppingCart className="h-4 w-4 mr-2" />
                       {t("view_products")}
                     </Button>
@@ -236,6 +302,13 @@ export function MarketplacePage() {
           </div>
         )}
       </div>
+
+      <ProductDetailsModal
+        supplier={selectedSupplier}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onOrder={handleOrder}
+      />
     </div>
   )
 }
