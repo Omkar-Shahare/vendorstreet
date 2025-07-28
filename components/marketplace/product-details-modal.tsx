@@ -80,8 +80,13 @@ export function ProductDetailsModal({ supplier, isOpen, onClose, onOrder }: Prod
   }
 
   const handleContactSupplier = () => {
-    // In a real app, this would open phone dialer or messaging
-    window.open(`tel:${supplier.phone}`)
+    if (supplier.phone) {
+      // Try to open phone dialer
+      window.open(`tel:${supplier.phone}`)
+    } else {
+      // Fallback to showing contact info
+      alert(`Contact ${supplier.name} at: ${supplier.phone}`)
+    }
   }
 
   return (

@@ -167,19 +167,79 @@ export function MarketplacePage() {
   }
 
   const handleOrder = async (supplierId: string, items: { productId: string; quantity: number; price: number }[]) => {
-    // In a real app, this would make an API call to create the order
-    console.log('Creating order:', { supplierId, items })
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    toast({
-      title: "Order Placed Successfully!",
-      description: `Your order has been placed and will be processed soon.`,
-    })
-    
-    // In a real app, this would update the orders in the backend
-    // and the orders page would fetch the updated data
+    try {
+      // Create order object
+      const supplier = suppliers.find(s => s.id === supplierId)
+      if (!supplier) return
+      
+      const order = {
+        id: `ORD-${Date.now()}`,
+        supplier: supplier.name,
+        items: items.map(item => {
+          const product = supplier.products.find(p => p.id === item.productId)
+          return {
+            name: product?.name || 'Unknown Product',
+            quantity: `${item.quantity} ${product?.unit || 'units'}`,
+            price: item.price
+          }
+        }),
+        totalAmount: items.reduce((sum, item) => sum + item.price, 0),
+        status: 'pending' as const,
+        orderDate: new Date().toISOString().split('T')[0],
+        deliveryAddress: `${profile?.businessName || 'Shop'}, ${profile?.location || 'Location'}`,
+        trackingId: `TRK${Date.now()}`,
+        supplierContact: supplier.phone,
+      }
+      
+      // Save to localStorage for orders page
+      const existingOrders = JSON.parse(localStorage.getItem('vendorconnect-orders') || '[]')
+      const updatedOrders = [order, ...existingOrders]
+      localStorage.setItem('vendorconnect-orders', JSON.stringify(updatedOrders))
+      
+      // Also save to supplier orders
+      const supplierOrder = {
+        id: order.id,
+        vendorName: profile?.name || 'Unknown Vendor',
+        vendorPhone: profile?.phone || '+91 00000 00000',
+        vendorEmail: profile?.email || 'vendor@example.com',
+        items: items.map(item => {
+          const product = supplier.products.find(p => p.id === item.productId)
+          return {
+            productId: item.productId,
+            productName: product?.name || 'Unknown Product',
+            quantity: item.quantity,
+            price: item.price
+          }
+        }),
+        totalAmount: order.totalAmount,
+        status: 'pending' as const,
+        orderDate: order.orderDate,
+        deliveryAddress: order.deliveryAddress,
+        estimatedDelivery: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      }
+      
+      const existingSupplierOrders = JSON.parse(localStorage.getItem('supplier-orders') || '[]')
+      const updatedSupplierOrders = [supplierOrder, ...existingSupplierOrders]
+      localStorage.setItem('supplier-orders', JSON.stringify(updatedSupplierOrders))
+      
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      toast({
+        title: "Order Placed Successfully!",
+        description: `Your order worth ₹${order.totalAmount} has been placed with ${supplier.name}.`,
+      })
+      
+      // Dispatch custom event to update orders page
+      window.dispatchEvent(new CustomEvent('newOrder', { detail: order }))
+      
+    } catch (error) {
+      toast({
+        title: "Order Failed",
+        description: "There was an error placing your order. Please try again.",
+        variant: "destructive"
+      })
+    }
   }
 
   return (

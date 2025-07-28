@@ -65,11 +65,32 @@ export function Navigation() {
 
           {/* Desktop Right Side */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" size="icon" className="relative">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="relative"
+              onClick={() => {
+                // Mark notifications as read
+                const notifications = JSON.parse(localStorage.getItem('supplier-notifications') || '[]')
+                const updatedNotifications = notifications.map((n: any) => ({ ...n, read: true }))
+                localStorage.setItem('supplier-notifications', JSON.stringify(updatedNotifications))
+                
+                toast({
+                  title: "Notifications",
+                  description: "You have new notifications to review",
+                })
+              }}
+            >
               <Bell className="h-4 w-4" />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                2
-              </span>
+              {(() => {
+                const notifications = JSON.parse(localStorage.getItem('supplier-notifications') || '[]')
+                const unreadCount = notifications.filter((n: any) => !n.read).length
+                return unreadCount > 0 ? (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                ) : null
+              })()}
             </Button>
 
             <Button variant="ghost" onClick={toggleLanguage} className="flex items-center">
